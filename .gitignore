@@ -1,0 +1,13 @@
+### Generic Visual Studio Code items
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### Ignore local history of files
+.history
+
+### Ignore the build / output directories
+bin/
+obj/
