@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace API
 {
@@ -25,6 +26,7 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddSingleton<ConnectionMultiplexer>(ConnectionMultiplexer.Connect("192.168.0.61,allowAdmin=true"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
