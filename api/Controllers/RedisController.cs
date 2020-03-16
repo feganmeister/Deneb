@@ -1,23 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
+using API.Models;
+
 namespace API.Controllers
 {
+
     [ApiController]
     [Route("api/[controller]")]
     public class RedisController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
 
         private readonly ILogger<RedisController> _logger;
         private readonly ConnectionMultiplexer _redis;
@@ -32,16 +29,21 @@ namespace API.Controllers
 
         [HttpGet]
         [Route("Get")]
-        public async Task<IEnumerable<WeatherForecast>> Get()
+        public async Task<IActionResult> Get()
         {
-            var rng = new Random();
-            var forecast = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            var item1 = new RedisItem1
             {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = rng.Next(-20, 55),
-                Summary = Summaries[rng.Next(Summaries.Length)]
-            }).ToArray();
-            database.StringSet(DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), JsonSerializer.Serialize(forecast.First()));
+                RedisType = "RedisItem1",
+                Test1 = "testing 1"
+            };
+            var item2 = new RedisItem2
+            {
+                RedisType = "RedisItem2",
+                Test2 = "testing 2"
+            };
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            await database.StringSetAsync((now - 100).ToString(), JsonSerializer.Serialize(item1));
+            await database.StringSetAsync((now - 200).ToString(), JsonSerializer.Serialize(item2));
             var endpoints = _redis.GetEndPoints();
             foreach(var endpoint in endpoints)
             {
@@ -50,19 +52,22 @@ namespace API.Controllers
                 var keys = server.Keys(pattern: "*");
                 foreach (var key in keys)
                 {
-                    var value = database.StringGet(key);
+                    var value = await database.StringGetAsync(key);
                     Debug.WriteLine($"{key}={value}");
                 }
-            }   
-            return forecast;
+            }
+            return Ok();
         }
 
         [HttpGet]
         [Route("GetByKey")]
-        public async Task<string> GetByKey(int id)
+        public async Task<IActionResult> GetByKey(string id)
         {
-            var value = database.StringGet(id.ToString());
-            return value;
+            var value = await database.StringGetAsync(id);
+            if (value.Length() <= 0) return NotFound();
+            var redisType = new ResolveRedisType(value);
+            Debug.WriteLine($"redisType={redisType.RedisType}");
+            return Ok(value);
         }
 
     }
